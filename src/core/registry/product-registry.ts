@@ -19,7 +19,10 @@ export interface ProductRegistry {
   /** Fetch a product by its unique manifest name; `undefined` when unknown. */
   findByName(name: string): Promise<Product | undefined>;
 
-  /** All registered products, oldest first. */
+  /**
+   * All registered products, oldest first. Products registered within the
+   * same millisecond share a `createdAt` and are ordered by id.
+   */
   list(): Promise<Product[]>;
 
   /** Remove a product by id. Resolves `true` when the product existed. */

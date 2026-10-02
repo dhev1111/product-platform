@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { ManifestValidationError } from '../../src/core/manifest/index.js';
 import {
@@ -53,11 +53,21 @@ describe('InMemoryProductRegistry', () => {
 
   it('lists products oldest first', async () => {
     const registry = new InMemoryProductRegistry();
-    const first = await registry.register({ name: 'first', version: '0.1.0' });
-    const second = await registry.register({ name: 'second', version: '0.2.0' });
 
-    const listed = await registry.list();
-    expect(listed.map((product) => product.id)).toEqual([first.id, second.id]);
+    // Control the clock so the two products get distinct createdAt values;
+    // otherwise same-millisecond registrations fall back to arbitrary id order.
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+      const first = await registry.register({ name: 'first', version: '0.1.0' });
+      vi.setSystemTime(new Date('2026-01-01T00:00:00.100Z'));
+      const second = await registry.register({ name: 'second', version: '0.2.0' });
+
+      const listed = await registry.list();
+      expect(listed.map((product) => product.id)).toEqual([first.id, second.id]);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it('removes products', async () => {
